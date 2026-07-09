@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Inventory Scanner</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- HTML5-QRCode for Camera Scanning -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- SheetJS for generating multi-tab Excel files -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+
+<body class="bg-gray-100 font-sans min-h-screen pb-24">
+
+    <!-- Header Section -->
+    <header class="bg-blue-600 text-white p-4 sticky top-0 z-50 shadow-md">
+        <h1 class="text-xl font-bold text-center">M420 School Inventory Scanner</h1>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-4">
+
+        <!-- Location Settings Card -->
+        <div class="bg-white p-4 rounded-xl shadow">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">1. Location Settings</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700">Floor</label>
+                    <select id="floorSelect"
+                        class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
+                        <option value="Floor 1">1st Floor</option>
+                        <option value="Floor 2">2nd Floor</option>
+                        <option value="Floor 3">3rd Floor</option>
+                        <option value="Floor 4">4th Floor</option>
+                        <option value="Floor 5">5th Floor</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700">Room</label>
+                    <input type="text" id="roomInput" placeholder="e.g., 422"
+                        class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Specs Card -->
+        <div class="bg-white p-4 rounded-xl shadow space-y-3">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">2. Device Specifications</h2>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700">Device Type</label>
+                <select id="typeSelect" onchange="updateBrandDropdown()"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
+                    <option value="Laptop">Laptop</option>
+                    <option value="Smart Board">Smart Board</option>
+                    <option value="Desktop">Desktop</option>
+                    <option value="Printer">Printer</option>
+                    <option value="Tablet">Tablet</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700">Brand</label>
+                <select id="brandSelect"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
+                    <!-- Options populated dynamically by JavaScript -->
+                </select>
+            </div>
+        </div>
+
+        <!-- Scanning & Asset Info Card -->
+        <div class="bg-white p-4 rounded-xl shadow space-y-4">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">3. Scan & Capture</h2>
+
+            <!-- Asset Tag Scanning -->
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">DOE Asset Tag</label>
+                <div class="flex gap-2">
+                    <input type="text" id="assetTagInput" placeholder="Scan or type tag"
+                        class="block w-full p-2 border border-gray-300 rounded-md text-base">
+                    <button onclick="startScanner('assetTagInput')"
+                        class="bg-blue-600 text-white px-4 rounded-md font-medium active:bg-blue-700">📷 Scan</button>
+                </div>
+            </div>
+
+            <!-- Serial Number Scanning -->
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Serial Number</label>
+                <div class="flex gap-2">
+                    <input type="text" id="serialInput" placeholder="Scan or type serial"
+                        class="block w-full p-2 border border-gray-300 rounded-md text-base">
+                    <button onclick="startScanner('serialInput')"
+                        class="bg-blue-600 text-white px-4 rounded-md font-medium active:bg-blue-700">📷 Scan</button>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button onclick="saveRecord()"
+                class="w-full bg-green-600 text-white p-3 rounded-lg font-bold text-lg shadow active:bg-green-700 transition">
+                📥 Save Item to Log
+            </button>
+        </div>
+
+        <!-- Inventory Preview Summary -->
+        <div class="bg-white p-4 rounded-xl shadow">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Session Log Status</h2>
+            <div class="text-sm text-gray-700">
+                Total items scanned this session: <span id="totalCount" class="font-bold text-blue-600">0</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Action Bar -->
+    <div
+        class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-center max-w-md mx-auto z-40">
+        <button onclick="exportToExcel()"
+            class="w-full bg-purple-600 text-white py-3 px-6 rounded-lg font-bold text-md shadow active:bg-purple-700">
+            📊 Download Multi-Tab Excel File
+        </button>
+    </div>
+
+    <!-- Scanner Camera Modal Overlay -->
+    <div id="scannerModal" class="fixed inset-0 bg-black/80 hidden flex-col items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-sm rounded-xl p-4 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-gray-800">Scanning Barcode...</h3>
+                <button onclick="stopScanner()" class="text-red-500 font-bold text-lg px-2">✕ Close</button>
+            </div>
+            <div id="reader" class="w-full bg-black rounded-lg overflow-hidden"></div>
+            <p class="text-xs text-center text-gray-500">Center the barcode inside the camera frame.</p>
+        </div>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        // Define smart relationships between devices and brands
+        const brandMapping = {
+            "Laptop": ["Lenovo", "Apple", "HP", "Dell", "Other"],
+            "Smart Board": ["SMART Technologies", "Promethean", "Other"],
+            "Desktop": ["Dell", "HP", "Lenovo", "Apple", "Other"],
+            "Printer": ["HP", "Brother", "Canon", "Lexmark", "Xerox", "Other"],
+            "Tablet": ["Apple (iPad)", "Lenovo", "Samsung", "Other"],
+            "Other": ["Other"]
+        };
+
+        // Internal inventory data bucket structured by floors
+        let inventoryData = {
+            "Floor 1": [],
+            "Floor 2": [],
+            "Floor 3": [],
+            "Floor 4": [],
+            "Floor 5": []
+        };
+
+        let html5QrcodeScanner = null;
+        let activeTargetInputId = null;
+
+        // Run on page load to initialize the dynamic brands
+        window.onload = function () {
+            updateBrandDropdown();
+        };
+
+        // Function to update the Brand options based on selected Device Type
+        function updateBrandDropdown() {
+            const selectedType = document.getElementById('typeSelect').value;
+            const brandSelect = document.getElementById('brandSelect');
+
+            // Clear current options
+            brandSelect.innerHTML = "";
+
+            // Get available brands for the selected device type
+            const availableBrands = brandMapping[selectedType] || ["Other"];
+
+            // Re-populate with valid brands
+            availableBrands.forEach(brand => {
+                const option = document.createElement('option');
+                option.value = brand;
+                option.innerText = brand;
+                brandSelect.appendChild(option);
+            });
+        }
+
+        // Start scanning sequence
+        function startScanner(targetInputId) {
+            activeTargetInputId = targetInputId;
+            document.getElementById('scannerModal').classList.remove('hidden');
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, // Forces back camera on mobile phones
+                config,
+                onScanSuccess
+            ).catch(err => {
+                alert("Camera error: " + err);
+                stopScanner();
+            });
+        }
+
+        // On successful scan
+        function onScanSuccess(decodedText, decodedResult) {
+            if (navigator.vibrate) navigator.vibrate(100); // Vibrate on success if supported
+            document.getElementById(activeTargetInputId).value = decodedText;
+            stopScanner();
+        }
+
+        // Close and terminate camera scanner
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    document.getElementById('scannerModal').classList.add('hidden');
+                }).catch(() => {
+                    document.getElementById('scannerModal').classList.add('hidden');
+                });
+            } else {
+                document.getElementById('scannerModal').classList.add('hidden');
+            }
+        }
+
+        // Save entry into memory
+        function saveRecord() {
+            const floor = document.getElementById('floorSelect').value;
+            const room = document.getElementById('roomInput').value.trim();
+            const type = document.getElementById('typeSelect').value;
+            const brand = document.getElementById('brandSelect').value;
+            const assetTag = document.getElementById('assetTagInput').value.trim();
+            const serial = document.getElementById('serialInput').value.trim();
+
+            if (!room || !assetTag || !serial) {
+                alert("Please fill out Room, Asset Tag, and Serial Number before saving!");
+                return;
+            }
+
+            // Push to correct floor array
+            inventoryData[floor].push({
+                "Room": room,
+                "Device Type": type,
+                "Brand": brand,
+                "DOE Asset Tag": assetTag,
+                "Serial Number": serial,
+                "Timestamp": new Date().toLocaleString()
+            });
+
+            // Update total count indicator
+            updateTotalCount();
+
+            // Clear scanning inputs for next item but retain Floor, Room, Type, and Brand selection
+            document.getElementById('assetTagInput').value = "";
+            document.getElementById('serialInput').value = "";
+
+            alert(`Saved item to ${floor} - Room ${room}!`);
+        }
+
+        function updateTotalCount() {
+            let total = 0;
+            for (let floor in inventoryData) {
+                total += inventoryData[floor].length;
+            }
+            document.getElementById('totalCount').innerText = total;
+        }
+
+        // Generate and download multi-tab Excel spreadsheet
+        function exportToExcel() {
+            let totalItems = 0;
+            for (let f in inventoryData) totalItems += inventoryData[f].length;
+            if (totalItems === 0) {
+                alert("No items scanned yet! Add items before downloading.");
+                return;
+            }
+
+            const workbook = XLSX.utils.book_new();
+
+            // Create a tab for each floor that has logged data
+            for (const floorName in inventoryData) {
+                if (inventoryData[floorName].length > 0) {
+                    const worksheet = XLSX.utils.json_to_sheet(inventoryData[floorName]);
+                    XLSX.utils.book_append_sheet(workbook, worksheet, floorName);
+                }
+            }
+
+            // Generate file download
+            XLSX.writeFile(workbook, "School_Inventory_Export.xlsx");
+        }
+    </script>
+</body>
+
+</html>
