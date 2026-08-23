@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,24 +11,26 @@
     <!-- SheetJS for generating multi-tab Excel files -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
-
-<body class="bg-gray-100 font-sans min-h-screen pb-24">
+<body class="bg-gray-100 font-sans min-h-screen pb-32">
 
     <!-- Header Section -->
-    <header class="bg-blue-600 text-white p-4 sticky top-0 z-50 shadow-md">
-        <h1 class="text-xl font-bold text-center">M420 School Inventory Scanner</h1>
+    <header class="bg-blue-600 text-white p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">🏫 Inventory Scanner</h1>
+        <!-- Audit Lookup Button -->
+        <button onclick="openAuditModal()" class="bg-blue-800 hover:bg-blue-900 p-2 rounded-full shadow transition">
+            🔍 Audit
+        </button>
     </header>
 
     <main class="max-w-md mx-auto p-4 space-y-4">
-
+        
         <!-- Location Settings Card -->
         <div class="bg-white p-4 rounded-xl shadow">
             <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">1. Location Settings</h2>
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-medium text-gray-700">Floor</label>
-                    <select id="floorSelect"
-                        class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
+                    <select id="floorSelect" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
                         <option value="Floor 1">1st Floor</option>
                         <option value="Floor 2">2nd Floor</option>
                         <option value="Floor 3">3rd Floor</option>
@@ -39,33 +40,39 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700">Room</label>
-                    <input type="text" id="roomInput" placeholder="e.g., 422"
-                        class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
+                    <input type="text" id="roomInput" placeholder="e.g., 422" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
                 </div>
+            </div>
+
+            <!-- CART TOGGLE -->
+            <div class="mt-4 flex items-center justify-between bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                <div>
+                    <label class="text-sm font-bold text-yellow-900 block">Scanning a Cart?</label>
+                    <span class="text-xs text-yellow-700">Isolates cart items into a specific Room tab</span>
+                </div>
+                <input type="checkbox" id="isCartToggle" class="w-6 h-6 text-yellow-600 rounded">
             </div>
         </div>
 
         <!-- Device Specs Card -->
         <div class="bg-white p-4 rounded-xl shadow space-y-3">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">2. Device Specifications</h2>
-
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">2. Device & Cart Details</h2>
+            
             <div>
                 <label class="block text-xs font-medium text-gray-700">Device Type</label>
-                <select id="typeSelect" onchange="updateBrandDropdown()"
-                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
+                <select id="typeSelect" onchange="updateBrandDropdown()" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
                     <option value="Laptop">Laptop</option>
+                    <option value="Tablet">Tablet (iPad, etc.)</option>
                     <option value="Smart Board">Smart Board</option>
                     <option value="Desktop">Desktop</option>
                     <option value="Printer">Printer</option>
-                    <option value="Tablet">Tablet</option>
                     <option value="Other">Other</option>
                 </select>
             </div>
 
             <div>
                 <label class="block text-xs font-medium text-gray-700">Brand</label>
-                <select id="brandSelect"
-                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
+                <select id="brandSelect" class="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-base">
                     <!-- Options populated dynamically by JavaScript -->
                 </select>
             </div>
@@ -73,16 +80,20 @@
 
         <!-- Scanning & Asset Info Card -->
         <div class="bg-white p-4 rounded-xl shadow space-y-4">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">3. Scan & Capture</h2>
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">3. Scan & Capture</h2>
+            
+            <!-- Tag Toggle Switch -->
+            <div class="flex items-center justify-between bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <label class="text-sm font-bold text-blue-900">Has DOE Asset Tag?</label>
+                <input type="checkbox" id="hasTagToggle" checked onchange="toggleTagInput()" class="w-6 h-6 text-blue-600 rounded">
+            </div>
 
             <!-- Asset Tag Scanning -->
-            <div>
+            <div id="assetTagContainer">
                 <label class="block text-xs font-medium text-gray-700 mb-1">DOE Asset Tag</label>
                 <div class="flex gap-2">
-                    <input type="text" id="assetTagInput" placeholder="Scan or type tag"
-                        class="block w-full p-2 border border-gray-300 rounded-md text-base">
-                    <button onclick="startScanner('assetTagInput')"
-                        class="bg-blue-600 text-white px-4 rounded-md font-medium active:bg-blue-700">📷 Scan</button>
+                    <input type="text" id="assetTagInput" placeholder="Scan or type tag" class="block w-full p-2 border border-gray-300 rounded-md text-base">
+                    <button onclick="startScanner('assetTagInput')" class="bg-blue-600 text-white px-4 rounded-md font-medium active:bg-blue-700">📷 Scan</button>
                 </div>
             </div>
 
@@ -90,37 +101,44 @@
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Serial Number</label>
                 <div class="flex gap-2">
-                    <input type="text" id="serialInput" placeholder="Scan or type serial"
-                        class="block w-full p-2 border border-gray-300 rounded-md text-base">
-                    <button onclick="startScanner('serialInput')"
-                        class="bg-blue-600 text-white px-4 rounded-md font-medium active:bg-blue-700">📷 Scan</button>
+                    <input type="text" id="serialInput" placeholder="Scan or type serial" class="block w-full p-2 border border-gray-300 rounded-md text-base">
+                    <button onclick="startScanner('serialInput')" class="bg-blue-600 text-white px-4 rounded-md font-medium active:bg-blue-700">📷 Scan</button>
                 </div>
             </div>
 
             <!-- Submit Button -->
-            <button onclick="saveRecord()"
-                class="w-full bg-green-600 text-white p-3 rounded-lg font-bold text-lg shadow active:bg-green-700 transition">
+            <button onclick="saveRecord()" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold text-lg shadow active:bg-green-700 transition">
                 📥 Save Item to Log
             </button>
         </div>
 
         <!-- Inventory Preview Summary -->
         <div class="bg-white p-4 rounded-xl shadow">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Session Log Status</h2>
-            <div class="text-sm text-gray-700">
-                Total items scanned this session: <span id="totalCount" class="font-bold text-blue-600">0</span>
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Session Log Status</h2>
+                <button onclick="clearSessionData()" class="text-xs text-red-600 font-bold hover:underline">Clear Data</button>
             </div>
+            <div class="text-sm text-gray-700 flex justify-between">
+                <span>Tagged Items: <span id="taggedCount" class="font-bold text-blue-600">0</span></span>
+                <span>Untagged Items: <span id="untaggedCount" class="font-bold text-gray-600">0</span></span>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-2 text-center">Data is safely auto-saved to your phone.</p>
         </div>
 
     </main>
 
-    <!-- Bottom Action Bar -->
-    <div
-        class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-center max-w-md mx-auto z-40">
-        <button onclick="exportToExcel()"
-            class="w-full bg-purple-600 text-white py-3 px-6 rounded-lg font-bold text-md shadow active:bg-purple-700">
-            📊 Download Multi-Tab Excel File
-        </button>
+    <!-- Bottom Action Bar (Split into two buttons) -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <div class="max-w-md mx-auto grid grid-cols-2 gap-3">
+            <button onclick="exportExcel('tagged')" class="bg-blue-600 text-white py-3 rounded-lg font-bold text-sm shadow active:bg-blue-700 flex flex-col items-center">
+                <span>📊 Download</span>
+                <span class="text-xs font-normal">Tagged File</span>
+            </button>
+            <button onclick="exportExcel('untagged')" class="bg-gray-700 text-white py-3 rounded-lg font-bold text-sm shadow active:bg-gray-800 flex flex-col items-center">
+                <span>📊 Download</span>
+                <span class="text-xs font-normal">Untagged File</span>
+            </button>
+        </div>
     </div>
 
     <!-- Scanner Camera Modal Overlay -->
@@ -135,47 +153,84 @@
         </div>
     </div>
 
+    <!-- Audit / Lookup Modal Overlay -->
+    <div id="auditModal" class="fixed inset-0 bg-black/80 hidden flex-col items-center justify-start pt-20 p-4 z-50">
+        <div class="bg-white w-full max-w-sm rounded-xl p-4 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-gray-800 flex items-center gap-2">🔍 Audit Asset Lookup</h3>
+                <button onclick="closeAuditModal()" class="text-red-500 font-bold text-lg px-2">✕</button>
+            </div>
+            
+            <p class="text-xs text-gray-600">Enter a Tag or Serial to check which room/cart it was scanned in during this session.</p>
+            
+            <div class="flex gap-2">
+                <input type="text" id="auditInput" placeholder="Tag or Serial #" class="block w-full p-2 border border-gray-300 rounded-md text-base">
+                <button onclick="runAudit()" class="bg-blue-600 text-white px-4 rounded-md font-medium active:bg-blue-700">Search</button>
+            </div>
+            
+            <div id="auditResult" class="p-3 bg-gray-50 rounded border border-gray-200 min-h-[80px] text-sm text-gray-700">
+                <em>Results will appear here...</em>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Logic Script -->
     <script>
-        // Define smart relationships between devices and brands
+        // Updated Brand Mapping with Chromebooks
         const brandMapping = {
-            "Laptop": ["Lenovo", "Apple", "HP", "Dell", "Other"],
-            "Smart Board": ["SMART Technologies", "Promethean", "Other"],
-            "Desktop": ["Dell", "Acer", "HP", "Lenovo", "Apple", "Other"],
-            "Printer": ["HP", "Brother", "Canon", "Lexmark", "Xerox", "Other"],
+            "Laptop": ["Lenovo", "Apple", "HP", "Dell", "Chromebook", "Other"],
             "Tablet": ["Apple (iPad)", "Lenovo", "Samsung", "Other"],
+            "Smart Board": ["SMART Technologies", "Promethean", "Other"],
+            "Desktop": ["Dell", "HP", "Lenovo", "Apple", "Other"],
+            "Printer": ["HP", "Brother", "Canon", "Lexmark", "Xerox", "Other"],
             "Other": ["Other"]
         };
 
-        // Internal inventory data bucket structured by floors
-        let inventoryData = {
-            "Floor 1": [],
-            "Floor 2": [],
-            "Floor 3": [],
-            "Floor 4": [],
-            "Floor 5": []
-        };
-
+        // Data buckets
+        let taggedData = {};
+        let untaggedData = {};
+        
         let html5QrcodeScanner = null;
         let activeTargetInputId = null;
 
-        // Run on page load to initialize the dynamic brands
-        window.onload = function () {
+        // Run when app opens to load saved data
+        window.onload = function() {
             updateBrandDropdown();
+            loadSessionData();
         };
 
-        // Function to update the Brand options based on selected Device Type
+        // --- LOCAL STORAGE FUNCTIONS (Data Persistence) ---
+        function saveSessionData() {
+            localStorage.setItem('schoolInv_Tagged', JSON.stringify(taggedData));
+            localStorage.setItem('schoolInv_Untagged', JSON.stringify(untaggedData));
+        }
+
+        function loadSessionData() {
+            const savedTagged = localStorage.getItem('schoolInv_Tagged');
+            const savedUntagged = localStorage.getItem('schoolInv_Untagged');
+            
+            if (savedTagged) taggedData = JSON.parse(savedTagged);
+            if (savedUntagged) untaggedData = JSON.parse(savedUntagged);
+            
+            updateTotalCount();
+        }
+
+        function clearSessionData() {
+            if(confirm("Are you sure you want to clear all scanned data? ONLY do this after you have downloaded your Excel files!")) {
+                taggedData = {};
+                untaggedData = {};
+                saveSessionData();
+                updateTotalCount();
+                alert("Session data cleared. Ready for a new batch!");
+            }
+        }
+        // ---------------------------------------------------
+
         function updateBrandDropdown() {
             const selectedType = document.getElementById('typeSelect').value;
             const brandSelect = document.getElementById('brandSelect');
-
-            // Clear current options
             brandSelect.innerHTML = "";
-
-            // Get available brands for the selected device type
             const availableBrands = brandMapping[selectedType] || ["Other"];
-
-            // Re-populate with valid brands
             availableBrands.forEach(brand => {
                 const option = document.createElement('option');
                 option.value = brand;
@@ -184,16 +239,27 @@
             });
         }
 
-        // Start scanning sequence
+        function toggleTagInput() {
+            const hasTag = document.getElementById('hasTagToggle').checked;
+            const container = document.getElementById('assetTagContainer');
+            if (hasTag) {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                document.getElementById('assetTagInput').value = ""; 
+            }
+        }
+
+        // --- CAMERA SCANNING ---
         function startScanner(targetInputId) {
             activeTargetInputId = targetInputId;
             document.getElementById('scannerModal').classList.remove('hidden');
-
+            
             html5QrcodeScanner = new Html5Qrcode("reader");
             const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-
+            
             html5QrcodeScanner.start(
-                { facingMode: "environment" }, // Forces back camera on mobile phones
+                { facingMode: "environment" }, 
                 config,
                 onScanSuccess
             ).catch(err => {
@@ -202,14 +268,12 @@
             });
         }
 
-        // On successful scan
         function onScanSuccess(decodedText, decodedResult) {
-            if (navigator.vibrate) navigator.vibrate(100); // Vibrate on success if supported
+            if(navigator.vibrate) navigator.vibrate(100); 
             document.getElementById(activeTargetInputId).value = decodedText;
             stopScanner();
         }
 
-        // Close and terminate camera scanner
         function stopScanner() {
             if (html5QrcodeScanner) {
                 html5QrcodeScanner.stop().then(() => {
@@ -221,72 +285,159 @@
                 document.getElementById('scannerModal').classList.add('hidden');
             }
         }
+        // -----------------------
 
-        // Save entry into memory
+        // --- SAVE RECORD ---
         function saveRecord() {
             const floor = document.getElementById('floorSelect').value;
             const room = document.getElementById('roomInput').value.trim();
             const type = document.getElementById('typeSelect').value;
             const brand = document.getElementById('brandSelect').value;
-            const assetTag = document.getElementById('assetTagInput').value.trim();
             const serial = document.getElementById('serialInput').value.trim();
+            const hasTag = document.getElementById('hasTagToggle').checked;
+            const isCart = document.getElementById('isCartToggle').checked;
 
-            if (!room || !assetTag || !serial) {
-                alert("Please fill out Room, Asset Tag, and Serial Number before saving!");
+            if (!room || !serial) {
+                alert("Please fill out Room and Serial Number before saving!");
                 return;
             }
 
-            // Push to correct floor array
-            inventoryData[floor].push({
-                "Room": room,
-                "Device Type": type,
-                "Brand": brand,
-                "DOE Asset Tag": assetTag,
-                "Serial Number": serial,
-                "Timestamp": new Date().toLocaleString()
-            });
+            let targetTabName = floor;
+            if (isCart) {
+                targetTabName = "Room " + room + " Cart";
+                if (targetTabName.length > 31) targetTabName = targetTabName.substring(0, 31);
+            }
 
-            // Update total count indicator
+            if (!taggedData[targetTabName]) taggedData[targetTabName] = [];
+            if (!untaggedData[targetTabName]) untaggedData[targetTabName] = [];
+
+            if (hasTag) {
+                const assetTag = document.getElementById('assetTagInput').value.trim();
+                if (!assetTag) {
+                    alert("Please fill out the DOE Asset Tag!");
+                    return;
+                }
+                taggedData[targetTabName].push({
+                    "Room": room,
+                    "Location Type": isCart ? "Cart" : "Loose in Room",
+                    "Device Type": type,
+                    "Brand": brand,
+                    "DOE Asset Tag": assetTag,
+                    "Serial Number": serial,
+                    "Timestamp": new Date().toLocaleString()
+                });
+            } else {
+                untaggedData[targetTabName].push({
+                    "Room": room,
+                    "Location Type": isCart ? "Cart" : "Loose in Room",
+                    "Device Type": type,
+                    "Brand": brand,
+                    "Serial Number": serial,
+                    "Notes": "No DOE Tag Found",
+                    "Timestamp": new Date().toLocaleString()
+                });
+            }
+
+            // Save to browser memory automatically
+            saveSessionData();
             updateTotalCount();
-
-            // Clear scanning inputs for next item but retain Floor, Room, Type, and Brand selection
+            
             document.getElementById('assetTagInput').value = "";
             document.getElementById('serialInput').value = "";
-
-            alert(`Saved item to ${floor} - Room ${room}!`);
+            
+            alert(`Saved ${brand} ${type} to [ ${targetTabName} ]!`);
         }
 
         function updateTotalCount() {
-            let total = 0;
-            for (let floor in inventoryData) {
-                total += inventoryData[floor].length;
-            }
-            document.getElementById('totalCount').innerText = total;
+            let tCount = 0, uCount = 0;
+            for (let f in taggedData) tCount += taggedData[f].length;
+            for (let f in untaggedData) uCount += untaggedData[f].length;
+            
+            document.getElementById('taggedCount').innerText = tCount;
+            document.getElementById('untaggedCount').innerText = uCount;
         }
 
-        // Generate and download multi-tab Excel spreadsheet
-        function exportToExcel() {
+        // --- EXPORT TO EXCEL ---
+        function exportExcel(dataType) {
+            const isTagged = (dataType === 'tagged');
+            const dataSet = isTagged ? taggedData : untaggedData;
+            const fileName = isTagged ? "Tagged_Inventory.xlsx" : "Untagged_Inventory.xlsx";
+            
             let totalItems = 0;
-            for (let f in inventoryData) totalItems += inventoryData[f].length;
-            if (totalItems === 0) {
-                alert("No items scanned yet! Add items before downloading.");
+            for (let f in dataSet) totalItems += dataSet[f].length;
+            
+            if(totalItems === 0) {
+                alert(`No ${isTagged ? 'Tagged' : 'Untagged'} items scanned yet! Add some before downloading.`);
                 return;
             }
 
             const workbook = XLSX.utils.book_new();
 
-            // Create a tab for each floor that has logged data
-            for (const floorName in inventoryData) {
-                if (inventoryData[floorName].length > 0) {
-                    const worksheet = XLSX.utils.json_to_sheet(inventoryData[floorName]);
-                    XLSX.utils.book_append_sheet(workbook, worksheet, floorName);
+            for (const tabName in dataSet) {
+                if (dataSet[tabName].length > 0) {
+                    const worksheet = XLSX.utils.json_to_sheet(dataSet[tabName]);
+                    XLSX.utils.book_append_sheet(workbook, worksheet, tabName);
                 }
             }
+            XLSX.writeFile(workbook, fileName);
+        }
 
-            // Generate file download
-            XLSX.writeFile(workbook, "School_Inventory_Export.xlsx");
+        // --- AUDIT LOOKUP TOOL ---
+        function openAuditModal() {
+            document.getElementById('auditModal').classList.remove('hidden');
+            document.getElementById('auditInput').value = "";
+            document.getElementById('auditResult').innerHTML = "<em>Results will appear here...</em>";
+        }
+
+        function closeAuditModal() {
+            document.getElementById('auditModal').classList.add('hidden');
+        }
+
+        function runAudit() {
+            const query = document.getElementById('auditInput').value.trim().toLowerCase();
+            const resultDiv = document.getElementById('auditResult');
+            
+            if (!query) {
+                resultDiv.innerHTML = "<span class='text-red-500'>Please enter a tag or serial to search.</span>";
+                return;
+            }
+
+            let foundItems = [];
+
+            // Search Tagged Data
+            for (let tab in taggedData) {
+                taggedData[tab].forEach(item => {
+                    if (item["DOE Asset Tag"].toLowerCase() === query || item["Serial Number"].toLowerCase() === query) {
+                        foundItems.push(`<div class='mb-2 pb-2 border-b border-gray-200'>
+                            <strong class='text-blue-600'>MATCH FOUND (Tagged)</strong><br>
+                            <b>Located in:</b> ${tab} (Room ${item.Room})<br>
+                            <b>Device:</b> ${item.Brand} ${item["Device Type"]}<br>
+                            <b>Scanned:</b> ${item.Timestamp}
+                        </div>`);
+                    }
+                });
+            }
+
+            // Search Untagged Data
+            for (let tab in untaggedData) {
+                untaggedData[tab].forEach(item => {
+                    if (item["Serial Number"].toLowerCase() === query) {
+                        foundItems.push(`<div class='mb-2 pb-2 border-b border-gray-200'>
+                            <strong class='text-gray-700'>MATCH FOUND (Untagged)</strong><br>
+                            <b>Located in:</b> ${tab} (Room ${item.Room})<br>
+                            <b>Device:</b> ${item.Brand} ${item["Device Type"]}<br>
+                            <b>Scanned:</b> ${item.Timestamp}
+                        </div>`);
+                    }
+                });
+            }
+
+            if (foundItems.length > 0) {
+                resultDiv.innerHTML = foundItems.join("");
+            } else {
+                resultDiv.innerHTML = `<span class='text-red-600'>❌ No match found for "${query}" in current session.</span>`;
+            }
         }
     </script>
 </body>
-
 </html>
