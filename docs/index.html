@@ -448,5 +448,16 @@
             }
         }
     </script>
+
+    <!-- EMERGENCY COPY BUTTONS -->
+    <div style="position:fixed; bottom:80px; left:10px; right:10px; z-index:9999; display:flex; gap:10px;">
+      <button onclick="navigator.clipboard.writeText(localStorage.getItem('schoolInv_Tagged')); alert('Tagged items copied!');" style="flex:1; background:#2563eb; color:white; padding:15px; border-radius:8px; font-weight:bold; font-size:16px;">
+        📋 Copy Tagged
+      </button>
+      <button onclick="navigator.clipboard.writeText(localStorage.getItem('schoolInv_Untagged')); alert('Untagged items copied!');" style="flex:1; background:#4b5563; color:white; padding:15px; border-radius:8px; font-weight:bold; font-size:16px;">
+        📋 Copy Untagged
+      </button>
+    </div>
+    
 </body>
 </html>
